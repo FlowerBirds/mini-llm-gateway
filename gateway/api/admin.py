@@ -26,6 +26,9 @@ class ModelCreate(BaseModel):
     provider: str
     api_key: str
     base_url: Optional[str] = None
+    input_price: float = 0.0
+    output_price: float = 0.0
+    cache_read_price: float = 0.0
     enabled: bool = True
 
 
@@ -34,6 +37,9 @@ class ModelUpdate(BaseModel):
     provider: Optional[str] = None
     api_key: Optional[str] = None
     base_url: Optional[str] = None
+    input_price: Optional[float] = None
+    output_price: Optional[float] = None
+    cache_read_price: Optional[float] = None
     enabled: Optional[bool] = None
 
 
@@ -64,6 +70,9 @@ async def create_model(request: Request, model: ModelCreate):
         "provider": model.provider,
         "api_key": model.api_key,
         "base_url": model.base_url or "",
+        "input_price": model.input_price,
+        "output_price": model.output_price,
+        "cache_read_price": model.cache_read_price,
         "enabled": model.enabled
     }
     result = model_manager.add_model(model_data)
@@ -113,7 +122,21 @@ async def set_active_model(request: Request, model_id: str):
 async def get_stats(request: Request):
     check_localhost(request)
     stats = get_stats_collector()
-    return stats.get_stats()
+    data = stats.get_stats()
+    # Enrich by_model with pricing from model config
+    model_manager = get_model_manager()
+    by_model = data.get("by_model", {})
+    for model_id, model_stats in by_model.items():
+        model_config = model_manager.get_model_by_id(model_id)
+        if model_config:
+            model_stats["input_price"] = model_config.get("input_price", 0)
+            model_stats["output_price"] = model_config.get("output_price", 0)
+            model_stats["cache_read_price"] = model_config.get("cache_read_price", 0)
+        else:
+            model_stats["input_price"] = 0
+            model_stats["output_price"] = 0
+            model_stats["cache_read_price"] = 0
+    return data
 
 
 @router.get("/v1/admin/stats/hourly")

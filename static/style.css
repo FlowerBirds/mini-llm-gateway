@@ -150,6 +150,12 @@ nav a:hover, nav a.active {
     transition: border-color 0.2s;
 }
 
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
 .form-group input:focus, .form-group select:focus {
     outline: none;
     border-color: var(--accent);
@@ -240,6 +246,11 @@ tr:hover td {
     color: var(--text-muted);
 }
 
+.model-info .price-info {
+    color: #ffa502;
+    font-size: 12px;
+}
+
 .model-actions {
     display: flex;
     gap: 8px;
@@ -310,6 +321,7 @@ tr:hover td {
 .stat-card.accent-pink .value { color: #ff6b81; }
 .stat-card.accent-purple .value { color: #a55eea; }
 .stat-card.accent-red .value { color: #ff4757; }
+.stat-card.accent-gold .value { color: #ffa502; }
 
 .empty {
     text-align: center;

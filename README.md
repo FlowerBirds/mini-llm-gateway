@@ -4,11 +4,12 @@
 
 ## 功能
 
-- **多模型管理** — 添加、编辑、删除上游模型配置，支持启用/禁用和设置默认模型
+- **多模型管理** — 添加、编辑、删除上游模型配置，支持启用/禁用和设置默认模型，可自定义提供商名称
+- **费用计算** — 为每个模型配置输入/输出/缓存命中单价，统计表自动计算费用，支持按模型和汇总查看
 - **请求转发** — 将 Claude API 格式的请求转发到不同的上游 Provider（MiniMax、DeepSeek 等）
 - **SSE 流式响应** — 支持 `text/event-stream` 流式输出
 - **用量统计** — 记录每个请求的输入/输出 Tokens、缓存命中、耗时和吞吐，支持按小时聚合查看趋势
-- **Dashboard** — Web UI 查看统计面板和请求历史
+- **Dashboard** — Web UI 查看统计面板和请求历史，支持深色/浅色主题切换
 
 ## 快速启动
 
@@ -55,16 +56,28 @@ POST /anthropic/v1/messages/count_tokens?beta=true
 
 ```
 GET    /v1/admin/config           — 获取当前配置和模型列表
-POST   /v1/admin/config/models    — 添加模型
-PUT    /v1/admin/config/models/{id}     — 更新模型
+POST   /v1/admin/config/models    — 添加模型（含 input_price / output_price / cache_read_price）
+PUT    /v1/admin/config/models/{id}     — 更新模型（含价格字段）
 DELETE /v1/admin/config/models/{id}     — 删除模型
 PUT    /v1/admin/config/models/{id}/enable?enabled=true  — 启用/禁用模型
 PUT    /v1/admin/config/active   — 设置默认模型
 
-GET    /v1/admin/stats           — 获取统计数据（summary / by_model / history）
+GET    /v1/admin/stats           — 获取统计数据（summary / by_model 含价格 / history）
 GET    /v1/admin/stats/hourly?hours=24   — 按小时聚合的统计数据
 POST   /v1/admin/stats/reset     — 重置所有统计数据
 ```
+
+### 模型定价
+
+每个模型可配置以下价格字段（单位：元/1M tokens）：
+
+| 字段 | 说明 |
+|------|------|
+| `input_price` | 输入单价（缓存未命中） |
+| `output_price` | 输出单价 |
+| `cache_read_price` | 输入单价（缓存命中） |
+
+费用计算公式：`费用 = input_tokens/1M × input_price + output_tokens/1M × output_price + cache_read_tokens/1M × cache_read_price`
 
 ## 数据存储
 

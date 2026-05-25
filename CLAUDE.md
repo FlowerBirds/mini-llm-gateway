@@ -29,10 +29,14 @@ mini-llm-gateway --host 0.0.0.0 --port 8080
 - `ModelManager`（`gateway/models/manager.py`）— 管理模型配置，持久化到 `data/models.json`，使用 FileLock 保证并发安全
 - `StatsCollector`（`gateway/stats/collector.py`）— 记录请求统计，持久化到 `data/stats.json`，支持按小时聚合，历史上限 10 万条
 
+**模型配置字段**: `id`, `name`, `provider`, `api_key`, `base_url`, `input_price`, `output_price`, `cache_read_price`, `enabled`
+- 价格字段单位为元/1M tokens，用于费用统计
+- `cache_read_price` 对应缓存命中（cache read）场景的单价
+
 **API 路由**:
 - `gateway/api/proxy.py` — 代理转发核心，`/anthropic/v1/messages` 和 `/anthropic/v1/messages/count_tokens`
 - `gateway/api/models.py` — 模型列表接口，`/anthropic/v1/models`
-- `gateway/api/admin.py` — 管理 API（`/v1/admin/*`），仅限 localhost 访问
+- `gateway/api/admin.py` — 管理 API（`/v1/admin/*`），仅限 localhost 访问；`get_stats` 返回时自动附加上游模型的定价信息
 - `gateway/web/router.py` — 静态页面路由（`/config`、`/dashboard`）
 
 **前端**: 纯 HTML + CSS + JS（`static/`），无构建步骤。使用 CSS 变量实现深色/浅色主题切换，主题偏好存 localStorage。Dashboard 使用 Chart.js 绘制趋势图。

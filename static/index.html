@@ -33,11 +33,7 @@
                 </div>
                 <div class="form-group">
                     <label>提供商</label>
-                    <select id="provider" required>
-                        <option value="minimax">MiniMax</option>
-                        <option value="deepseek">DeepSeek</option>
-                        <option value="kimi">Kimi</option>
-                    </select>
+                    <input type="text" id="provider" placeholder="如: minimax, deepseek, kimi, openai, anthropic, zhipu" required>
                 </div>
                 <div class="form-group">
                     <label>API Key</label>
@@ -46,6 +42,20 @@
                 <div class="form-group">
                     <label>Base URL (可选)</label>
                     <input type="text" id="baseUrl" placeholder="留空使用默认">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>输入价格 (¥/1M tokens)</label>
+                        <input type="number" id="inputPrice" step="0.01" min="0" placeholder="如: 6.50" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label>输出价格 (¥/1M tokens)</label>
+                        <input type="number" id="outputPrice" step="0.01" min="0" placeholder="如: 27.00" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label>缓存命中价格 (¥/1M tokens)</label>
+                        <input type="number" id="cacheReadPrice" step="0.01" min="0" placeholder="如: 1.10" value="0">
+                    </div>
                 </div>
                 <button type="submit" class="btn btn-primary">添加模型</button>
             </form>
@@ -56,6 +66,48 @@
             <div id="modelList">
                 <div class="empty">暂无配置的模型</div>
             </div>
+        </div>
+
+        <!-- Edit model form (hidden by default) -->
+        <div class="card" id="editFormCard" style="display:none;">
+            <h2>编辑模型</h2>
+            <form id="editModelForm">
+                <input type="hidden" id="editModelId">
+                <div class="form-group">
+                    <label>模型名称</label>
+                    <input type="text" id="editModelName" required>
+                </div>
+                <div class="form-group">
+                    <label>提供商</label>
+                    <input type="text" id="editProvider" placeholder="如: minimax, deepseek, kimi, openai, anthropic, zhipu" required>
+                </div>
+                <div class="form-group">
+                    <label>API Key</label>
+                    <input type="password" id="editApiKey" placeholder="输入 API Key" required>
+                </div>
+                <div class="form-group">
+                    <label>Base URL (可选)</label>
+                    <input type="text" id="editBaseUrl" placeholder="留空使用默认">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>输入价格 (¥/1M tokens)</label>
+                        <input type="number" id="editInputPrice" step="0.01" min="0" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label>输出价格 (¥/1M tokens)</label>
+                        <input type="number" id="editOutputPrice" step="0.01" min="0" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label>缓存命中价格 (¥/1M tokens)</label>
+                        <input type="number" id="editCacheReadPrice" step="0.01" min="0" value="0">
+                    </div>
+                </div>
+                <div style="display:flex;gap:8px;">
+                    <button type="submit" class="btn btn-primary">保存修改</button>
+                    <button type="button" class="btn" style="background:#333;color:#aaa;" onclick="hideEditForm()">取消</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -108,12 +160,16 @@
                     <div class="model-info">
                         <h3>${model.name} (${model.id})</h3>
                         <p>${model.provider} ${model.base_url ? '• ' + model.base_url : ''}</p>
+                        <p class="price-info">
+                            ${model.input_price > 0 || model.output_price > 0 ? `输入 ¥${(model.input_price||0).toFixed(2)} / 输出 ¥${(model.output_price||0).toFixed(2)} / 缓存命中 ¥${(model.cache_read_price||0).toFixed(2)}` : ''}
+                        </p>
                     </div>
                     <div class="model-actions">
                         ${model.id === data.active_model
                             ? '<span class="badge badge-active">当前使用</span>'
                             : `<button class="btn btn-success" onclick="setActive('${model.id}')">设为当前</button>`
                         }
+                        <button class="btn" onclick="showEditForm('${model.id}', '${model.name}', '${model.provider}', '${model.api_key}', '${model.base_url || ''}', ${model.input_price || 0}, ${model.output_price || 0}, ${model.cache_read_price || 0})">编辑</button>
                         <button class="btn btn-danger" onclick="deleteModel('${model.id}')">删除</button>
                     </div>
                 </div>
@@ -127,7 +183,10 @@
                 name: document.getElementById('modelName').value,
                 provider: document.getElementById('provider').value,
                 api_key: document.getElementById('apiKey').value,
-                base_url: document.getElementById('baseUrl').value || null
+                base_url: document.getElementById('baseUrl').value || null,
+                input_price: parseFloat(document.getElementById('inputPrice').value) || 0,
+                output_price: parseFloat(document.getElementById('outputPrice').value) || 0,
+                cache_read_price: parseFloat(document.getElementById('cacheReadPrice').value) || 0
             };
 
             await fetch(`${API_BASE}/v1/admin/config/models`, {
@@ -154,6 +213,46 @@
             });
             loadModels();
         }
+
+        function showEditForm(id, name, provider, apiKey, baseUrl, inputPrice, outputPrice, cacheReadPrice) {
+            document.getElementById('editFormCard').style.display = 'block';
+            document.getElementById('editModelId').value = id;
+            document.getElementById('editModelName').value = name;
+            document.getElementById('editProvider').value = provider;
+            document.getElementById('editApiKey').value = apiKey;
+            document.getElementById('editBaseUrl').value = baseUrl;
+            document.getElementById('editInputPrice').value = inputPrice;
+            document.getElementById('editOutputPrice').value = outputPrice;
+            document.getElementById('editCacheReadPrice').value = cacheReadPrice;
+            document.getElementById('editModelForm').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function hideEditForm() {
+            document.getElementById('editFormCard').style.display = 'none';
+        }
+
+        document.getElementById('editModelForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const modelId = document.getElementById('editModelId').value;
+            const updates = {
+                name: document.getElementById('editModelName').value,
+                provider: document.getElementById('editProvider').value,
+                api_key: document.getElementById('editApiKey').value,
+                base_url: document.getElementById('editBaseUrl').value || null,
+                input_price: parseFloat(document.getElementById('editInputPrice').value) || 0,
+                output_price: parseFloat(document.getElementById('editOutputPrice').value) || 0,
+                cache_read_price: parseFloat(document.getElementById('editCacheReadPrice').value) || 0
+            };
+
+            await fetch(`${API_BASE}/v1/admin/config/models/${modelId}`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(updates)
+            });
+
+            hideEditForm();
+            loadModels();
+        });
 
         loadModels();
     </script>

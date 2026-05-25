@@ -50,6 +50,10 @@
                 <h3>错误率</h3>
                 <div class="value" id="errorRate">0%</div>
             </div>
+            <div class="stat-card accent-gold">
+                <h3>总费用 (¥)</h3>
+                <div class="value" id="totalCost">¥0.00</div>
+            </div>
         </div>
 
         <div class="card">
@@ -277,8 +281,8 @@
             document.getElementById('avgThroughput').textContent = (data.summary.avg_throughput || 0).toFixed(1);
 
             const totalReqs = data.summary.total_requests || 0;
-            const totalErrors = Object.values(data.by_model || {}).reduce((s, m) => s + (m.errors || 0), 0);
-            const errorRate = totalReqs > 0 ? (totalErrors / totalReqs * 100).toFixed(1) : '0.0';
+            const totalErrorCount = Object.values(data.by_model || {}).reduce((s, m) => s + (m.errors || 0), 0);
+            const errorRate = totalReqs > 0 ? (totalErrorCount / totalReqs * 100).toFixed(1) : '0.0';
             document.getElementById('errorRate').textContent = errorRate + '%';
 
             const byModel = data.by_model || {};
@@ -287,6 +291,36 @@
             if (Object.keys(byModel).length === 0) {
                 modelStatsEl.innerHTML = '<div class="empty">暂无数据</div>';
             } else {
+                let totalCost = 0;
+                const rows = Object.entries(byModel).map(([id, stats]) => {
+                    const inputPrice = stats.input_price || 0;
+                    const outputPrice = stats.output_price || 0;
+                    const cacheReadPrice = stats.cache_read_price || 0;
+                    const cost = (stats.input_tokens / 1e6 * inputPrice)
+                               + (stats.output_tokens / 1e6 * outputPrice)
+                               + ((stats.cache_read_tokens || 0) / 1e6 * cacheReadPrice);
+                    totalCost += cost;
+                    return `<tr>
+                        <td>${id}</td>
+                        <td>${stats.requests}</td>
+                        <td>${formatNum(stats.input_tokens)}</td>
+                        <td>${formatNum(stats.output_tokens)}</td>
+                        <td>${formatNum(stats.cache_read_tokens || 0)}</td>
+                        <td>${formatNum(stats.cache_creation_tokens || 0)}</td>
+                        <td>${inputPrice > 0 ? inputPrice.toFixed(2) : '-'}</td>
+                        <td>${outputPrice > 0 ? outputPrice.toFixed(2) : '-'}</td>
+                        <td>${cacheReadPrice > 0 ? cacheReadPrice.toFixed(2) : '-'}</td>
+                        <td style="color:#ffa502;font-weight:600;">¥${cost.toFixed(2)}</td>
+                        <td>${stats.errors > 0 ? '<span style="color:#ff4757;">' + stats.errors + '</span>' : '0'}</td>
+                        <td>${(stats.avg_throughput || 0).toFixed(1)}</td>
+                    </tr>`;
+                }).join('');
+                const totalRequests = Object.values(byModel).reduce((s,m) => s + (m.requests||0), 0);
+                const totalInput = Object.values(byModel).reduce((s,m) => s + (m.input_tokens||0), 0);
+                const totalOutput = Object.values(byModel).reduce((s,m) => s + (m.output_tokens||0), 0);
+                const totalCacheRead = Object.values(byModel).reduce((s,m) => s + (m.cache_read_tokens||0), 0);
+                const totalCacheCreation = Object.values(byModel).reduce((s,m) => s + (m.cache_creation_tokens||0), 0);
+                const totalErrors = Object.values(byModel).reduce((s,m) => s + (m.errors||0), 0);
                 modelStatsEl.innerHTML = `
                     <div class="table-wrap"><table>
                         <thead>
@@ -297,26 +331,34 @@
                                 <th>输出 Tokens</th>
                                 <th>缓存命中</th>
                                 <th>缓存创建</th>
+                                <th>输入单价(¥/1M)</th>
+                                <th>输出单价(¥/1M)</th>
+                                <th>缓存命中单价(¥/1M)</th>
+                                <th>费用(¥)</th>
                                 <th>错误次数</th>
                                 <th>平均吞吐(tok/s)</th>
                             </tr>
                         </thead>
                         <tbody>
-                            ${Object.entries(byModel).map(([id, stats]) => `
-                                <tr>
-                                    <td>${id}</td>
-                                    <td>${stats.requests}</td>
-                                    <td>${formatNum(stats.input_tokens)}</td>
-                                    <td>${formatNum(stats.output_tokens)}</td>
-                                    <td>${formatNum(stats.cache_read_tokens || 0)}</td>
-                                    <td>${formatNum(stats.cache_creation_tokens || 0)}</td>
-                                    <td>${stats.errors > 0 ? '<span style="color:#ff4757;">' + stats.errors + '</span>' : '0'}</td>
-                                    <td>${(stats.avg_throughput || 0).toFixed(1)}</td>
-                                </tr>
-                            `).join('')}
+                            ${rows}
+                            <tr style="font-weight:700;border-top:2px solid var(--accent);">
+                                <td>合计</td>
+                                <td>${totalRequests}</td>
+                                <td>${formatNum(totalInput)}</td>
+                                <td>${formatNum(totalOutput)}</td>
+                                <td>${formatNum(totalCacheRead)}</td>
+                                <td>${formatNum(totalCacheCreation)}</td>
+                                <td>-</td>
+                                <td>-</td>
+                                <td>-</td>
+                                <td style="color:#ffa502;font-weight:600;">¥${totalCost.toFixed(2)}</td>
+                                <td>${totalErrors}</td>
+                                <td>-</td>
+                            </tr>
                         </tbody>
                     </table></div>
                 `;
+                document.getElementById('totalCost').textContent = '¥' + totalCost.toFixed(2);
             }
 
             const history = data.history || [];
