@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Gateway - 配置</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>LLM Gateway</h1>
+            <nav>
+                <a href="/" class="active">配置</a>
+                <a href="/dashboard">统计</a>
+            </nav>
+        </header>
+
+        <div class="card">
+            <h2>添加模型</h2>
+            <form id="addModelForm">
+                <div class="form-group">
+                    <label>模型 ID</label>
+                    <input type="text" id="modelId" placeholder="如: minimax" required>
+                </div>
+                <div class="form-group">
+                    <label>模型名称</label>
+                    <input type="text" id="modelName" placeholder="如: MiniMax" required>
+                </div>
+                <div class="form-group">
+                    <label>提供商</label>
+                    <select id="provider" required>
+                        <option value="minimax">MiniMax</option>
+                        <option value="deepseek">DeepSeek</option>
+                        <option value="kimi">Kimi</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>API Key</label>
+                    <input type="password" id="apiKey" placeholder="输入 API Key" required>
+                </div>
+                <div class="form-group">
+                    <label>Base URL (可选)</label>
+                    <input type="text" id="baseUrl" placeholder="留空使用默认">
+                </div>
+                <button type="submit" class="btn btn-primary">添加模型</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>已配置的模型</h2>
+            <div id="modelList">
+                <div class="empty">暂无配置的模型</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '';
+
+        async function loadModels() {
+            const res = await fetch(`${API_BASE}/v1/admin/config`);
+            const data = await res.json();
+            const list = document.getElementById('modelList');
+
+            if (!data.models || data.models.length === 0) {
+                list.innerHTML = '<div class="empty">暂无配置的模型</div>';
+                return;
+            }
+
+            list.innerHTML = data.models.map(model => `
+                <div class="model-item">
+                    <div class="model-info">
+                        <h3>${model.name} (${model.id})</h3>
+                        <p>${model.provider} ${model.base_url ? '• ' + model.base_url : ''}</p>
+                    </div>
+                    <div class="model-actions">
+                        ${model.id === data.active_model
+                            ? '<span class="badge badge-active">当前使用</span>'
+                            : `<button class="btn btn-success" onclick="setActive('${model.id}')">设为当前</button>`
+                        }
+                        <button class="btn btn-danger" onclick="deleteModel('${model.id}')">删除</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        document.getElementById('addModelForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const model = {
+                id: document.getElementById('modelId').value,
+                name: document.getElementById('modelName').value,
+                provider: document.getElementById('provider').value,
+                api_key: document.getElementById('apiKey').value,
+                base_url: document.getElementById('baseUrl').value || null
+            };
+
+            await fetch(`${API_BASE}/v1/admin/config/models`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(model)
+            });
+
+            document.getElementById('addModelForm').reset();
+            loadModels();
+        });
+
+        async function setActive(modelId) {
+            await fetch(`${API_BASE}/v1/admin/config/active?model_id=${modelId}`, {
+                method: 'PUT'
+            });
+            loadModels();
+        }
+
+        async function deleteModel(modelId) {
+            if (!confirm('确定要删除这个模型吗？')) return;
+            await fetch(`${API_BASE}/v1/admin/config/models/${modelId}`, {
+                method: 'DELETE'
+            });
+            loadModels();
+        }
+
+        loadModels();
+    </script>
+</body>
+</html>
