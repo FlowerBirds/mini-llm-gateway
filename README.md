@@ -21,6 +21,20 @@ mini-llm-gateway
 - 配置页面：http://localhost:8080/
 - 统计面板：http://localhost:8080/dashboard
 
+## 界面预览
+
+**配置页面**
+
+![配置页面](images/gateway1.png)
+
+**统计面板**
+
+![统计面板](images/gateway2.png)
+
+**每小时趋势**
+
+![每小时趋势](images/gateway3.png)
+
 ## 配置文件
 
 `config.yaml` 中的 `allow_origins` 需包含前端页面的 origin，否则 CORS 会拦截请求。
