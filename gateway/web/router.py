@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from pathlib import Path
 
 STATIC_DIR = Path(__file__).parent.parent.parent / "static"
@@ -9,6 +9,11 @@ router = APIRouter()
 
 @router.get("/")
 async def index():
+    return RedirectResponse("/dashboard")
+
+
+@router.get("/config")
+async def config():
     return FileResponse(STATIC_DIR / "index.html")
 
 

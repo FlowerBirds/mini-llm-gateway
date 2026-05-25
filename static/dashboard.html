@@ -12,8 +12,12 @@
         <header>
             <h1>LLM Gateway</h1>
             <nav>
-                <a href="/">配置</a>
+                <a href="/config">配置</a>
                 <a href="/dashboard" class="active">统计</a>
+                <button class="theme-toggle" onclick="toggleTheme()">
+                    <span class="icon" id="themeIcon">🌙</span>
+                    <span id="themeText">深色</span>
+                </button>
             </nav>
         </header>
 
@@ -110,8 +114,61 @@
             output: '#2ed573',
             total: '#ffa502',
             requests: '#ff6b81',
-            grid: 'rgba(255,255,255,0.1)'
+            grid: 'rgba(255,255,255,0.1)',
+            text: '#888888'
         };
+
+        function getChartGridColor() {
+            const isDark = !document.documentElement.hasAttribute('data-theme') ||
+                          document.documentElement.getAttribute('data-theme') === 'dark';
+            return isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)';
+        }
+
+        function getChartTextColor() {
+            const isDark = !document.documentElement.hasAttribute('data-theme') ||
+                          document.documentElement.getAttribute('data-theme') === 'dark';
+            return isDark ? '#888' : '#666';
+        }
+
+        // Theme management
+        function getStoredTheme() {
+            return localStorage.getItem('theme') || 'dark';
+        }
+
+        function setTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+            updateThemeUI(theme);
+            // Update chart colors if chart exists
+            if (hourlyChart) {
+                updateChartColors();
+            }
+        }
+
+        function updateThemeUI(theme) {
+            const icon = document.getElementById('themeIcon');
+            const text = document.getElementById('themeText');
+            if (theme === 'light') {
+                icon.textContent = '☀️';
+                text.textContent = '浅色';
+            } else {
+                icon.textContent = '🌙';
+                text.textContent = '深色';
+            }
+        }
+
+        function toggleTheme() {
+            const current = getStoredTheme();
+            setTheme(current === 'dark' ? 'light' : 'dark');
+        }
+
+        function updateChartColors() {
+            chartColors.grid = getChartGridColor();
+            chartColors.text = getChartTextColor();
+        }
+
+        // Initialize theme on page load
+        setTheme(getStoredTheme());
 
         function formatNum(n) {
             if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
@@ -179,7 +236,7 @@
                     maintainAspectRatio: false,
                     interaction: { mode: 'index', intersect: false },
                     plugins: {
-                        legend: { labels: { color: '#eaeaea', usePointStyle: true, pointStyle: 'circle', padding: 16 } },
+                        legend: { labels: { color: chartColors.text, usePointStyle: true, pointStyle: 'circle', padding: 16 } },
                         tooltip: {
                             callbacks: {
                                 label: ctx => ctx.dataset.label + ': ' + formatNum(ctx.raw)
@@ -188,19 +245,19 @@
                     },
                     scales: {
                         x: {
-                            ticks: { color: '#888', maxTicksLimit: 20, maxRotation: 45 },
+                            ticks: { color: chartColors.text, maxTicksLimit: 20, maxRotation: 45 },
                             grid: { color: chartColors.grid }
                         },
                         y: {
                             type: 'linear', display: true, position: 'left',
-                            title: { display: true, text: 'Tokens', color: '#888' },
-                            ticks: { color: '#888', callback: v => formatNum(v) },
+                            title: { display: true, text: 'Tokens', color: chartColors.text },
+                            ticks: { color: chartColors.text, callback: v => formatNum(v) },
                             grid: { color: chartColors.grid }
                         },
                         y2: {
                             type: 'linear', display: true, position: 'right',
-                            title: { display: true, text: '请求次数', color: '#888' },
-                            ticks: { color: '#888', callback: v => formatNum(v) },
+                            title: { display: true, text: '请求次数', color: chartColors.text },
+                            ticks: { color: chartColors.text, callback: v => formatNum(v) },
                             grid: { drawOnChartArea: false }
                         }
                     }

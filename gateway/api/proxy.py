@@ -82,7 +82,7 @@ async def proxy_count_tokens(request: Request):
 def _record(model_id: str, input_tokens: int, output_tokens: int,
             cache_read_tokens: int, cache_creation_tokens: int,
             duration: float, error: bool = False):
-    throughput = round(output_tokens / duration, 2) if duration > 0 else 0.0
+    throughput = round((input_tokens + output_tokens) / duration, 2) if duration > 0 else 0.0
     get_stats_collector().record_request(
         model_id, input_tokens, output_tokens,
         cache_read_tokens=cache_read_tokens,

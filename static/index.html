@@ -11,8 +11,12 @@
         <header>
             <h1>LLM Gateway</h1>
             <nav>
-                <a href="/" class="active">配置</a>
+                <a href="/config" class="active">配置</a>
                 <a href="/dashboard">统计</a>
+                <button class="theme-toggle" onclick="toggleTheme()">
+                    <span class="icon" id="themeIcon">🌙</span>
+                    <span id="themeText">深色</span>
+                </button>
             </nav>
         </header>
 
@@ -57,6 +61,37 @@
 
     <script>
         const API_BASE = '';
+
+        // Theme management
+        function getStoredTheme() {
+            return localStorage.getItem('theme') || 'dark';
+        }
+
+        function setTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+            updateThemeUI(theme);
+        }
+
+        function updateThemeUI(theme) {
+            const icon = document.getElementById('themeIcon');
+            const text = document.getElementById('themeText');
+            if (theme === 'light') {
+                icon.textContent = '☀️';
+                text.textContent = '浅色';
+            } else {
+                icon.textContent = '🌙';
+                text.textContent = '深色';
+            }
+        }
+
+        function toggleTheme() {
+            const current = getStoredTheme();
+            setTheme(current === 'dark' ? 'light' : 'dark');
+        }
+
+        // Initialize theme on page load
+        setTheme(getStoredTheme());
 
         async function loadModels() {
             const res = await fetch(`${API_BASE}/v1/admin/config`);

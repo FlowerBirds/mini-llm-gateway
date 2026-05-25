@@ -105,9 +105,9 @@ class StatsCollector:
         self._data["summary"]["total_cache_creation_tokens"] += cache_creation_tokens
         self._data["summary"]["total_duration"] += duration
 
-        total = self._data["summary"]["total_output_tokens"]
+        total_tokens = self._data["summary"]["total_input_tokens"] + self._data["summary"]["total_output_tokens"]
         total_dur = self._data["summary"]["total_duration"]
-        self._data["summary"]["avg_throughput"] = round(total / total_dur, 2) if total_dur > 0 else 0.0
+        self._data["summary"]["avg_throughput"] = round(total_tokens / total_dur, 2) if total_dur > 0 else 0.0
 
         if model_id not in self._data["by_model"]:
             self._data["by_model"][model_id] = {
@@ -127,9 +127,10 @@ class StatsCollector:
         self._data["by_model"][model_id]["cache_read_tokens"] += cache_read_tokens
         self._data["by_model"][model_id]["cache_creation_tokens"] += cache_creation_tokens
         self._data["by_model"][model_id]["total_duration"] += duration
+        model_in = self._data["by_model"][model_id]["input_tokens"]
         model_out = self._data["by_model"][model_id]["output_tokens"]
         model_dur = self._data["by_model"][model_id]["total_duration"]
-        self._data["by_model"][model_id]["avg_throughput"] = round(model_out / model_dur, 2) if model_dur > 0 else 0.0
+        self._data["by_model"][model_id]["avg_throughput"] = round((model_in + model_out) / model_dur, 2) if model_dur > 0 else 0.0
         if error:
             self._data["by_model"][model_id]["errors"] += 1
 
@@ -197,7 +198,7 @@ class StatsCollector:
             hourly[hour_key]["total_duration"] += entry.get("duration", 0.0)
 
         for h in hourly.values():
-            h["avg_throughput"] = round(h["output_tokens"] / h["total_duration"], 2) if h["total_duration"] > 0 else 0.0
+            h["avg_throughput"] = round((h["input_tokens"] + h["output_tokens"]) / h["total_duration"], 2) if h["total_duration"] > 0 else 0.0
 
         return sorted(hourly.values(), key=lambda x: x["hour"])
 
