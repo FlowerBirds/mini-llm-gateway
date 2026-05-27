@@ -219,39 +219,11 @@
                 return;
             }
 
-            const filledHourly = [];
-            for (let i = 0; i < hourlyData.length; i++) {
-                const curr = hourlyData[i];
-                filledHourly.push(curr);
-
-                if (i < hourlyData.length - 1) {
-                    const next = hourlyData[i + 1];
-                    const currHour = new Date(curr.hour);
-                    const nextHour = new Date(next.hour);
-                    const diffMs = nextHour - currHour;
-                    const diffHours = diffMs / 3600000;
-
-                    if (diffHours > 1) {
-                        for (let j = 1; j < diffHours; j++) {
-                            const d = new Date(currHour.getTime() + j * 3600000);
-                            const hourKey = d.toISOString().slice(0, 13) + ':00:00';
-                            filledHourly.push({
-                                hour: hourKey,
-                                requests: 0,
-                                input_tokens: 0,
-                                output_tokens: 0
-                            });
-                        }
-                    }
-                }
-            }
-
-            const useFullLabel = currentRange > 168;
-            const labels = filledHourly.map(h => useFullLabel ? formatHourFull(h.hour) : formatHour(h.hour));
-            const inputTokens = filledHourly.map(h => h.input_tokens);
-            const outputTokens = filledHourly.map(h => h.output_tokens);
-            const totalTokens = filledHourly.map(h => h.input_tokens + h.output_tokens);
-            const requests = filledHourly.map(h => h.requests);
+            const labels = hourlyData.map(h => formatHourFull(h.hour));
+            const inputTokens = hourlyData.map(h => h.input_tokens);
+            const outputTokens = hourlyData.map(h => h.output_tokens);
+            const totalTokens = hourlyData.map(h => h.input_tokens + h.output_tokens);
+            const requests = hourlyData.map(h => h.requests);
 
             if (hourlyChart) hourlyChart.destroy();
 
